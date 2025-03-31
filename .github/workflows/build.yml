@@ -1,4 +1,4 @@
-name: Cross-Platform Build
+name: Build Windows/Linux/macOS
 
 on: [push, pull_request]
 
@@ -11,30 +11,35 @@ jobs:
         include:
           - os: windows-latest
             generator: "Visual Studio 17 2022"
-            arch: x86
+            arch: x64
           - os: ubuntu-latest
             generator: "Unix Makefiles"
           - os: macos-latest
             generator: "Unix Makefiles"
 
+    timeout-minutes: 30
+
     steps:
       - uses: actions/checkout@v4
 
-      # Настройка MSVC только для Windows
+      # Настройка MSVC для Windows
       - name: Setup MSVC
         if: matrix.os == 'windows-latest'
         uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: x86
-          vs-version: 2022
-        timeout-minutes: 5  # Увеличиваем таймаут
+          arch: ${{ matrix.arch }}
+          toolset: latest
+          vsversion: 2022  # Правильное имя параметра
 
       # Установка зависимостей для Linux/macOS
       - name: Install dependencies
         if: matrix.os != 'windows-latest'
         run: |
-          sudo apt-get update && sudo apt-get install -y ninja-build  # Linux
-          brew install ninja  # macOS
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            sudo apt-get update && sudo apt-get install -y ninja-build
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+            brew install ninja
+          fi
 
       - name: Configure CMake
         run: cmake -B build -G "${{ matrix.generator }}"

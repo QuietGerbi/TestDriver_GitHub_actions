@@ -31,18 +31,18 @@ jobs:
           toolset: latest
           vsversion: 2022  # Правильное имя параметра
 
-      - name: Run tests (macOS)
+      - name: Prepare test environment (macOS)
         if: runner.os == 'macOS'
         run: |
-          # Подготовка среды
-          export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$(pwd)/build
+          # Даём права на выполнение тестовым скриптам
+          chmod +x test/*
           
-          # Запуск тестов с подробным выводом
-          cd build
-          for test in $(ls test/lab*); do
-            echo "Running $test..."
-            ./$test || echo "Test $test failed"
-          done
+          # Создаём необходимые входные файлы
+          echo "test data" > test/in.txt
+          cp test/in.txt build/in.txt
+          
+          # Для macOS могут потребоваться дополнительные библиотеки
+          brew install gcc || true
       # Установка зависимостей для Linux/macOS
       - name: Install dependencies
         if: matrix.os != 'windows-latest'

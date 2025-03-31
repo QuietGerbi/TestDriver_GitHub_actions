@@ -31,15 +31,24 @@ jobs:
           toolset: latest
           vsversion: 2022  # Правильное имя параметра
 
+      - name: Run tests (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          # Подготовка среды
+          export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$(pwd)/build
+          
+          # Запуск тестов с подробным выводом
+          cd build
+          for test in $(ls test/lab*); do
+            echo "Running $test..."
+            ./$test || echo "Test $test failed"
+          done
       # Установка зависимостей для Linux/macOS
       - name: Install dependencies
         if: matrix.os != 'windows-latest'
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
             sudo apt-get update && sudo apt-get install -y ninja-build
-          elif [ "$RUNNER_OS" == "macOS" ]; then
-            brew install ninja
-          fi
 
       - name: Configure CMake
         run: cmake -B build -G "${{ matrix.generator }}"

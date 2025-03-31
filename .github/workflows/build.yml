@@ -1,0 +1,63 @@
+name: Cross-Platform Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+          - os: windows-latest
+            generator: "Visual Studio 17 2022"
+            build_dir: "build"
+            artifact_name: "TestLabForWindows.zip"
+          - os: ubuntu-latest
+            generator: "Unix Makefiles"
+            build_dir: "build"
+            artifact_name: "TestLabForLinux.zip"
+          - os: macos-latest
+            generator: "Unix Makefiles"
+            build_dir: "build"
+            artifact_name: "TestLabForMac.zip"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1  # Аналог shallow_clone
+
+      - name: Setup environment (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x86
+
+      - name: Install dependencies (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          sudo apt-get update && sudo apt-get install -y ninja-build  # Для Linux
+          brew install ninja  # Для macOS
+
+      - name: Configure CMake
+        run: |
+          cmake -H. -B${{ matrix.build_dir }} -G "${{ matrix.generator }}"
+
+      - name: Build project
+        run: |
+          cmake --build ${{ matrix.build_dir }} --config Release
+
+      - name: Run tests
+        run: |
+          cd ${{ matrix.build_dir }} && ctest --output-on-failure
+
+      - name: Create artifacts
+        run: |
+          cd ${{ matrix.build_dir }}
+          7z a ../${{ matrix.artifact_name }} ./testlab*  # Для Windows
+          zip -r ../${{ matrix.artifact_name }} ./testlab*  # Для Linux/macOS
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}

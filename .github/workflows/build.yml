@@ -57,7 +57,7 @@ jobs:
           zip -r ../${{ matrix.artifact_name }} ./testlab*  # Для Linux/macOS
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: ${{ matrix.artifact_name }}

@@ -11,53 +11,40 @@ jobs:
         include:
           - os: windows-latest
             generator: "Visual Studio 17 2022"
-            build_dir: "build"
-            artifact_name: "TestLabForWindows.zip"
+            arch: x86
           - os: ubuntu-latest
             generator: "Unix Makefiles"
-            build_dir: "build"
-            artifact_name: "TestLabForLinux.zip"
           - os: macos-latest
             generator: "Unix Makefiles"
-            build_dir: "build"
-            artifact_name: "TestLabForMac.zip"
 
     steps:
       - uses: actions/checkout@v4
+
+      # Настройка MSVC только для Windows
+      - name: Setup MSVC
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
         with:
-          fetch-depth: 1  # Аналог shallow_clone
+          arch: ${{ matrix.arch }}
 
-      - name: Setup environment (Windows)
-        if: runner.os == 'Windows'
+      # Установка зависимостей для Linux/macOS
+      - name: Install dependencies
+        if: matrix.os != 'windows-latest'
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x86
-
-      - name: Install dependencies (Linux/macOS)
-        if: runner.os != 'Windows'
-        run: |
-          sudo apt-get update && sudo apt-get install -y ninja-build  # Для Linux
-          brew install ninja  # Для macOS
+          sudo apt-get update && sudo apt-get install -y ninja-build  # Linux
+          brew install ninja  # macOS
 
       - name: Configure CMake
-        run: |
-          cmake -H. -B${{ matrix.build_dir }} -G "${{ matrix.generator }}"
+        run: cmake -B build -G "${{ matrix.generator }}"
 
-      - name: Build project
-        run: |
-          cmake --build ${{ matrix.build_dir }} --config Release
+      - name: Build
+        run: cmake --build build --config Release
 
       - name: Run tests
-        run: |
-          cd ${{ matrix.build_dir }} && ctest --output-on-failure
-
-      - name: Create artifacts
-        run: |
-          cd ${{ matrix.build_dir }}
-          7z a ../${{ matrix.artifact_name }} ./testlab*  # Для Windows
-          zip -r ../${{ matrix.artifact_name }} ./testlab*  # Для Linux/macOS
+        run: cd build && ctest --output-on-failure
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.artifact_name }}
+          name: ${{ runner.os }}-build
+          path: build/

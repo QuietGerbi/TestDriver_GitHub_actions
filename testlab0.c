@@ -6,7 +6,7 @@ static int testN = 0;
 static const struct {const char *const in, *const out;} testInOut[] = {
     {"2 2\n111.01\n", "111.010000000000"},
     {"2 4\n111.01\n", "13.100000000000"},
-    {"2 2\n2.01\n", "bad input"},
+    {"2 2\n2.01\n", "too bad bro"},
     {"4 2\n13.1\n", "111.010000000000"},
     {"1 1\n0.0\n", "bad input"},
     {"1 2\n0.0\n", "bad input"},
